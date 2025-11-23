@@ -484,7 +484,7 @@ where
     type Output = <Left::UID as IsEqual<Right::UID>>::Output;
 }
 
-////////// Contains //////////
+////////// Contains; useless but i had to //////////
 
 trait Contains<Needle: ParamValue> {
     type Output: Bit;
@@ -493,14 +493,16 @@ trait Contains<Needle: ParamValue> {
 impl<Needle: ParamValue> Contains<Needle> for HNil {
     type Output = B0;
 }
-                   // <BRICK_USES as BitOr<USES>>::Output
+
 impl<Needle: ParamValue, ThisHead: ParamValue, Tail: Contains<Needle>> Contains<Needle>
     for HCons<ThisHead, Tail>
 where
     Needle::UID: Cmp<ThisHead::UID>,
     Needle::UID: IsEqualPrivate<ThisHead::UID, <Needle::UID as Cmp<ThisHead::UID>>::Output>,
+    <Needle::UID as IsEqualPrivate<ThisHead::UID, <Needle::UID as Cmp<ThisHead::UID>>::Output>>::Output: BitOr<<Tail as Contains<Needle>>::Output>,
+    <<Needle::UID as IsEqualPrivate<ThisHead::UID, <Needle::UID as Cmp<ThisHead::UID>>::Output>>::Output as BitOr<<Tail as Contains<Needle>>::Output>>::Output: Bit,
 {
-    type Output = <<(Needle, ThisHead) as UIDEquals>::Output as BitOr<B0>>::Output;
+    type Output = <<(Needle, ThisHead) as UIDEquals>::Output as BitOr<<Tail as Contains<Needle>>::Output >>::Output;
 }
 
 ////////// Higher order functions //////////
