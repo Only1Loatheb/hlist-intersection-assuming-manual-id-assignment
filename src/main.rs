@@ -8,7 +8,6 @@ use std::marker::PhantomData;
 struct Nil;
 struct Cons<X, Xs>(PhantomData<(X, Xs)>);
 
-
 ////////// Head //////////
 
 trait Head {
@@ -22,7 +21,6 @@ impl Head for Nil {
 impl<TheHead, Tail> Head for Cons<TheHead, Tail> {
     type Output = TheHead;
 }
-
 
 ////////// ListConcat //////////
 
@@ -40,7 +38,6 @@ where
 {
     type Output = Cons<LeftHead, <(LeftTail, RightList) as ListConcat>::Output>;
 }
-
 
 ////////// ListConcatAll //////////
 
@@ -60,7 +57,6 @@ where
     type Output = <(HeadList, <TailLists as ListConcatAll>::Output) as ListConcat>::Output;
 }
 
-
 ////////// Bool //////////
 
 struct False;
@@ -70,7 +66,6 @@ trait Bool {}
 
 impl Bool for False {}
 impl Bool for True {}
-
 
 ////////// AnyTrue //////////
 
@@ -107,7 +102,6 @@ impl Not for True {
     type Output = False;
 }
 
-
 ////////// Or //////////
 
 trait Or {
@@ -130,7 +124,6 @@ impl Or for (False, False) {
     type Output = False;
 }
 
-
 ////////// Nats //////////
 
 struct Z;
@@ -147,7 +140,6 @@ type N6 = S<N5>;
 trait Nat {}
 impl Nat for Z {}
 impl<N: Nat> Nat for S<N> {}
-
 
 ////////// PeanoEqual //////////
 
@@ -182,22 +174,6 @@ where
     type Output = <(N1, N2) as NatEqual>::Output;
 }
 
-////////// Contains, might require Conj1 trick//////////
-
-
-pub trait ParamValue: Clone {
-  const NAME: &'static str;
-}
-
-trait Equals {
-    type Output: Bool;
-}
-
-impl<Left, Right> Equals for (Left, Right)
-where {
-  type Output = ();
-}
-
 ////////// PeanoLT //////////
 
 trait NatLessThan {
@@ -224,7 +200,6 @@ where
 {
     type Output = <(N1, N2) as NatLessThan>::Output;
 }
-
 
 ////////// PeanoAbsDiff //////////
 
@@ -253,7 +228,6 @@ where
     type Output = <(N1, N2) as NatAbsDiff>::Output;
 }
 
-
 ////////// Range //////////
 
 trait Range {
@@ -271,7 +245,6 @@ where
     type Output = Cons<N, <N as Range>::Output>;
 }
 
-
 ////////// Higher order functions //////////
 
 trait Apply<A> {
@@ -283,7 +256,6 @@ struct Conj1<L>(PhantomData<L>);
 impl<X, L> Apply<X> for Conj1<L> {
     type Output = Cons<X, L>;
 }
-
 
 ////////// Map //////////
 
@@ -297,12 +269,11 @@ impl<Function> Map for (Function, Nil) {
 
 impl<Function, TheHead, Tail> Map for (Function, Cons<TheHead, Tail>)
 where
-    Function:  Apply<TheHead>,
+    Function: Apply<TheHead>,
     (Function, Tail): Map,
 {
     type Output = Cons<<Function as Apply<TheHead>>::Output, <(Function, Tail) as Map>::Output>;
 }
-
 
 ////////// MapCat //////////
 
@@ -318,7 +289,6 @@ where
     type Output = <<(FunctionThatReturnsList, List) as Map>::Output as ListConcatAll>::Output;
 }
 
-
 ////////// AppendIf //////////
 
 trait PrependIf {
@@ -332,7 +302,6 @@ impl<TheHead, Tail> PrependIf for (True, TheHead, Tail) {
 impl<TheHead, Tail> PrependIf for (False, TheHead, Tail) {
     type Output = Tail;
 }
-
 
 ////////// Filter //////////
 
@@ -348,11 +317,18 @@ impl<FilterFunction, TheHead, Tail, FilterOutput> Filter for (FilterFunction, Co
 where
     FilterFunction: Apply<TheHead>,
     (FilterFunction, Tail): Filter<Output = FilterOutput>,
-    (<FilterFunction as Apply<TheHead>>::Output, TheHead, FilterOutput): PrependIf,
+    (
+        <FilterFunction as Apply<TheHead>>::Output,
+        TheHead,
+        FilterOutput,
+    ): PrependIf,
 {
-    type Output = <(<FilterFunction as Apply<TheHead>>::Output, TheHead, <(FilterFunction, Tail) as Filter>::Output) as PrependIf>::Output;
+    type Output = <(
+        <FilterFunction as Apply<TheHead>>::Output,
+        TheHead,
+        <(FilterFunction, Tail) as Filter>::Output,
+    ) as PrependIf>::Output;
 }
-
 
 ////////// Queen //////////
 
@@ -362,7 +338,6 @@ struct Queen1<X>(PhantomData<X>);
 impl<X: Nat, Y> Apply<Y> for Queen1<X> {
     type Output = Queen<X, Y>;
 }
-
 
 ////////// QueensInRow //////////
 
@@ -378,7 +353,6 @@ where
     type Output = <(Queen1<X>, <N as Range>::Output) as Map>::Output;
 }
 
-
 ////////// Threatens //////////
 
 trait Threatens {
@@ -391,21 +365,35 @@ where
     (Ay, By): NatEqual,
     (Ax, Bx): NatAbsDiff,
     (Ay, By): NatAbsDiff,
-    (<(Ax, Bx) as NatEqual>::Output, <(Ay, By) as NatEqual>::Output): Or,
-    (<(Ax, Bx) as NatAbsDiff>::Output, <(Ay, By) as NatAbsDiff>::Output): NatEqual,
-    (<(<(Ax, Bx) as NatEqual>::Output, <(Ay, By) as NatEqual>::Output) as Or>::Output, <(<(Ax, Bx) as NatAbsDiff>::Output, <(Ay, By) as NatAbsDiff>::Output) as NatEqual>::Output): Or,
-{
-    type Output = <
-        (
-          <(
+    (
+        <(Ax, Bx) as NatEqual>::Output,
+        <(Ay, By) as NatEqual>::Output,
+    ): Or,
+    (
+        <(Ax, Bx) as NatAbsDiff>::Output,
+        <(Ay, By) as NatAbsDiff>::Output,
+    ): NatEqual,
+    (
+        <(
             <(Ax, Bx) as NatEqual>::Output,
             <(Ay, By) as NatEqual>::Output,
-            ) as Or>::Output,
-          <(
+        ) as Or>::Output,
+        <(
             <(Ax, Bx) as NatAbsDiff>::Output,
             <(Ay, By) as NatAbsDiff>::Output,
-            ) as NatEqual>::Output,
-        ) as Or>::Output;
+        ) as NatEqual>::Output,
+    ): Or,
+{
+    type Output = <(
+        <(
+            <(Ax, Bx) as NatEqual>::Output,
+            <(Ay, By) as NatEqual>::Output,
+        ) as Or>::Output,
+        <(
+            <(Ax, Bx) as NatAbsDiff>::Output,
+            <(Ay, By) as NatAbsDiff>::Output,
+        ) as NatEqual>::Output,
+    ) as Or>::Output;
 }
 
 struct Threatens1<A>(PhantomData<A>);
@@ -416,7 +404,6 @@ where
     type Output = <(Qa, Qb) as Threatens>::Output;
 }
 
-
 ////////// Safe //////////
 
 trait Safe {
@@ -425,8 +412,8 @@ trait Safe {
 
 impl<C, Q> Safe for (C, Q)
 where
-    (  Threatens1<Q>, C): Map,
-    <( Threatens1<Q>, C) as Map>::Output: ContainsTrue,
+    (Threatens1<Q>, C): Map,
+    <(Threatens1<Q>, C) as Map>::Output: ContainsTrue,
     <<(Threatens1<Q>, C) as Map>::Output as ContainsTrue>::Output: Not,
 {
     type Output = <<<(Threatens1<Q>, C) as Map>::Output as ContainsTrue>::Output as Not>::Output;
@@ -440,7 +427,6 @@ where
     type Output = <(C, Q) as Safe>::Output;
 }
 
-
 ////////// AddQueen //////////
 
 trait AddQueen {
@@ -451,9 +437,15 @@ impl<N, X, C> AddQueen for (N, X, C)
 where
     (N, X): QueensInRow,
     (Safe1<C>, <(N, X) as QueensInRow>::Output): Filter,
-    (Conj1<C>, <(Safe1<C>, <(N, X) as QueensInRow>::Output) as Filter>::Output): Map,
+    (
+        Conj1<C>,
+        <(Safe1<C>, <(N, X) as QueensInRow>::Output) as Filter>::Output,
+    ): Map,
 {
-    type Output = <(Conj1<C>, <(Safe1<C>, <(N, X) as QueensInRow>::Output) as Filter>::Output) as Map>::Output;
+    type Output = <(
+        Conj1<C>,
+        <(Safe1<C>, <(N, X) as QueensInRow>::Output) as Filter>::Output,
+    ) as Map>::Output;
 }
 
 struct AddQueen2<N, X>(PhantomData<(N, X)>);
@@ -463,7 +455,6 @@ where
 {
     type Output = <(N, X, C) as AddQueen>::Output;
 }
-
 
 trait AddQueenToAll {
     type Output;
@@ -475,7 +466,6 @@ where
 {
     type Output = <(AddQueen2<N, X>, Cs) as MapConcat>::Output;
 }
-
 
 ////////// AddQueensIf //////////
 
@@ -496,7 +486,6 @@ where
     type Output = <(N, S<X>, <(N, X, Cs) as AddQueenToAll>::Output) as AddQueens>::Output;
 }
 
-
 trait AddQueens {
     type Output;
 }
@@ -509,7 +498,6 @@ where
     type Output = <(<(X, N) as NatLessThan>::Output, N, X, Cs) as AddQueensIf>::Output;
 }
 
-
 ////////// Solution //////////
 
 trait Solution {
@@ -520,22 +508,49 @@ impl<N, AddQueensIfOutput> Solution for N
 where
     N: Nat,
     (Z, N): NatLessThan,
-    (<(Z, N) as NatLessThan>::Output, N, Z, Cons<Nil, Nil>): AddQueensIf<Output = AddQueensIfOutput>,
+    (<(Z, N) as NatLessThan>::Output, N, Z, Cons<Nil, Nil>):
+        AddQueensIf<Output = AddQueensIfOutput>,
     AddQueensIfOutput: Head,
 {
     type Output = <<(N, Z, Cons<Nil, Nil>) as AddQueens>::Output as Head>::Output;
 }
 
+////////// Name Equals //////////
+
+use typenum::private::IsEqualPrivate;
+use typenum::{Bit, Cmp, Integer, IsEqual, Unsigned, U};
+
+pub trait ParamValue {
+    type UID: Unsigned;
+}
+
+trait NameEquals {
+    type Output: Bit;
+}
+
+impl<Left: ParamValue, Right: ParamValue> NameEquals for (Left, Right)
+where
+    Left::UID: Cmp<Right::UID>,
+    Left::UID: IsEqualPrivate<Right::UID, <Left::UID as Cmp<Right::UID>>::Output>,
+{
+    type Output = <Left::UID as IsEqual<Right::UID>>::Output;
+}
+
+////////// Params //////////
+
+#[derive(Clone)]
+struct Param1;
+impl ParamValue for Param1{
+  type UID = U<1>;
+}
 
 ////////// Reify //////////
 
 fn main() {
-    enum Elem0{};
-    enum Elem1{};
-    enum Elem2{};
-    enum Elem3{};
-    enum Elem4{};
-    type List1 =Cons<Elem0, Cons<Elem1, Cons<Elem2, Nil>>>;
-    type List2 =Cons<Elem2, Cons<Elem3, Cons<Elem4, Nil>>>;
-    println!("{}", std::any::type_name::< <N6 as Solution>::Output >().replace("nine_queens::", ""));
+    type List1 = Cons<Elem0, Cons<Elem1, Cons<Elem2, Nil>>>;
+    type List2 = Cons<Elem2, Cons<Elem3, Cons<Elem4, Nil>>>;
+    println!(
+        "{}",
+        std::any::type_name::<<N6 as Solution>::Output>().replace("nine_queens::", "")
+    );
 }

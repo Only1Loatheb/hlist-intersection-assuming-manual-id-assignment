@@ -5,3 +5,4 @@ edition = "2024"
 rust-version = "1.91.0"
 
 [dependencies]
+typenum = { version = "1.19.0", features = [ "const-generics"] }
