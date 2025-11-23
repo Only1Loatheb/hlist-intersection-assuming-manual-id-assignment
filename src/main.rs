@@ -5,8 +5,8 @@ use std::marker::PhantomData;
 
 ////////// List //////////
 
-struct Nil;
-struct Cons<X, Xs>(PhantomData<(X, Xs)>);
+struct HNil;
+struct HCons<X, Xs>(PhantomData<(X, Xs)>);
 
 ////////// Head //////////
 
@@ -14,11 +14,11 @@ trait Head {
     type Output;
 }
 
-impl Head for Nil {
-    type Output = Nil;
+impl Head for HNil {
+    type Output = HNil;
 }
 
-impl<TheHead, Tail> Head for Cons<TheHead, Tail> {
+impl<TheHead, Tail> Head for HCons<TheHead, Tail> {
     type Output = TheHead;
 }
 
@@ -28,15 +28,15 @@ trait ListConcat {
     type Output;
 }
 
-impl<RightList> ListConcat for (Nil, RightList) {
+impl<RightList> ListConcat for (HNil, RightList) {
     type Output = RightList;
 }
 
-impl<LeftHead, LeftTail, RightList> ListConcat for (Cons<LeftHead, LeftTail>, RightList)
+impl<LeftHead, LeftTail, RightList> ListConcat for (HCons<LeftHead, LeftTail>, RightList)
 where
     (LeftTail, RightList): ListConcat,
 {
-    type Output = Cons<LeftHead, <(LeftTail, RightList) as ListConcat>::Output>;
+    type Output = HCons<LeftHead, <(LeftTail, RightList) as ListConcat>::Output>;
 }
 
 ////////// ListConcatAll //////////
@@ -45,11 +45,11 @@ trait ListConcatAll {
     type Output;
 }
 
-impl ListConcatAll for Nil {
-    type Output = Nil;
+impl ListConcatAll for HNil {
+    type Output = HNil;
 }
 
-impl<HeadList, TailLists> ListConcatAll for Cons<HeadList, TailLists>
+impl<HeadList, TailLists> ListConcatAll for HCons<HeadList, TailLists>
 where
     TailLists: ListConcatAll,
     (HeadList, <TailLists as ListConcatAll>::Output): ListConcat,
@@ -73,15 +73,15 @@ trait ContainsTrue {
     type Output: Bool;
 }
 
-impl ContainsTrue for Nil {
+impl ContainsTrue for HNil {
     type Output = False;
 }
 
-impl<Tail> ContainsTrue for Cons<True, Tail> {
+impl<Tail> ContainsTrue for HCons<True, Tail> {
     type Output = True;
 }
 
-impl<Tail> ContainsTrue for Cons<False, Tail>
+impl<Tail> ContainsTrue for HCons<False, Tail>
 where
     Tail: ContainsTrue,
 {
@@ -235,14 +235,14 @@ trait Range {
 }
 
 impl Range for Z {
-    type Output = Nil;
+    type Output = HNil;
 }
 
 impl<N> Range for S<N>
 where
     N: Nat + Range,
 {
-    type Output = Cons<N, <N as Range>::Output>;
+    type Output = HCons<N, <N as Range>::Output>;
 }
 
 ////////// Higher order functions //////////
@@ -254,7 +254,7 @@ trait Apply<A> {
 struct Conj1<L>(PhantomData<L>);
 
 impl<X, L> Apply<X> for Conj1<L> {
-    type Output = Cons<X, L>;
+    type Output = HCons<X, L>;
 }
 
 ////////// Map //////////
@@ -263,16 +263,16 @@ trait Map {
     type Output;
 }
 
-impl<Function> Map for (Function, Nil) {
-    type Output = Nil;
+impl<Function> Map for (Function, HNil) {
+    type Output = HNil;
 }
 
-impl<Function, TheHead, Tail> Map for (Function, Cons<TheHead, Tail>)
+impl<Function, TheHead, Tail> Map for (Function, HCons<TheHead, Tail>)
 where
     Function: Apply<TheHead>,
     (Function, Tail): Map,
 {
-    type Output = Cons<<Function as Apply<TheHead>>::Output, <(Function, Tail) as Map>::Output>;
+    type Output = HCons<<Function as Apply<TheHead>>::Output, <(Function, Tail) as Map>::Output>;
 }
 
 ////////// MapCat //////////
@@ -296,7 +296,7 @@ trait PrependIf {
 }
 
 impl<TheHead, Tail> PrependIf for (True, TheHead, Tail) {
-    type Output = Cons<TheHead, Tail>;
+    type Output = HCons<TheHead, Tail>;
 }
 
 impl<TheHead, Tail> PrependIf for (False, TheHead, Tail) {
@@ -309,11 +309,11 @@ trait Filter {
     type Output;
 }
 
-impl<FilterFunction> Filter for (FilterFunction, Nil) {
-    type Output = Nil;
+impl<FilterFunction> Filter for (FilterFunction, HNil) {
+    type Output = HNil;
 }
 
-impl<FilterFunction, TheHead, Tail, FilterOutput> Filter for (FilterFunction, Cons<TheHead, Tail>)
+impl<FilterFunction, TheHead, Tail, FilterOutput> Filter for (FilterFunction, HCons<TheHead, Tail>)
 where
     FilterFunction: Apply<TheHead>,
     (FilterFunction, Tail): Filter<Output = FilterOutput>,
@@ -508,17 +508,17 @@ impl<N, AddQueensIfOutput> Solution for N
 where
     N: Nat,
     (Z, N): NatLessThan,
-    (<(Z, N) as NatLessThan>::Output, N, Z, Cons<Nil, Nil>):
+    (<(Z, N) as NatLessThan>::Output, N, Z, HCons<HNil, HNil>):
         AddQueensIf<Output = AddQueensIfOutput>,
     AddQueensIfOutput: Head,
 {
-    type Output = <<(N, Z, Cons<Nil, Nil>) as AddQueens>::Output as Head>::Output;
+    type Output = <<(N, Z, HCons<HNil, HNil>) as AddQueens>::Output as Head>::Output;
 }
 
 ////////// UIDEquals //////////
 
 use typenum::private::IsEqualPrivate;
-use typenum::{Bit, Cmp, Integer, IsEqual, Unsigned, U};
+use typenum::{Bit, Cmp, IsEqual, U, Unsigned};
 
 pub trait ParamValue {
     type UID: Unsigned;
@@ -540,33 +540,33 @@ where
 
 #[derive(Clone)]
 struct Param0;
-impl ParamValue for Param0{
-  type UID = U<0>;
+impl ParamValue for Param0 {
+    type UID = U<0>;
 }
 
 #[derive(Clone)]
 struct Param1;
-impl ParamValue for Param1{
-  type UID = U<1>;
+impl ParamValue for Param1 {
+    type UID = U<1>;
 }
 
 #[derive(Clone)]
 struct Param2;
-impl ParamValue for Param2{
-  type UID = U<2>;
+impl ParamValue for Param2 {
+    type UID = U<2>;
 }
 
 #[derive(Clone)]
 struct Param3;
-impl ParamValue for Param3{
-  type UID = U<3>;
+impl ParamValue for Param3 {
+    type UID = U<3>;
 }
 
 ////////// Reify //////////
 
 fn main() {
-    type List1 = Cons<Param0, Cons<Param1, Cons<Param2, Nil>>>;
-    type List2 = Cons<Param2, Cons<Param3, Nil>>;
+    type List1 = HCons<Param0, HCons<Param1, HCons<Param2, HNil>>>;
+    type List2 = HCons<Param2, HCons<Param3, HNil>>;
     println!(
         "{}",
         std::any::type_name::<<N6 as Solution>::Output>().replace("nine_queens::", "")
