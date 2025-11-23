@@ -9,17 +9,17 @@ struct Nil;
 struct Cons<X, Xs>(PhantomData<(X, Xs)>);
 
 
-////////// First //////////
+////////// Head //////////
 
-trait First {
+trait Head {
     type Output;
 }
 
-impl First for Nil {
+impl Head for Nil {
     type Output = Nil;
 }
 
-impl<X, Xs> First for Cons<X, Xs> {
+impl<X, Xs> Head for Cons<X, Xs> {
     type Output = X;
 }
 
@@ -74,23 +74,23 @@ impl Bool for True {}
 
 ////////// AnyTrue //////////
 
-trait AnyTrue {
+trait ContainsTrue {
     type Output: Bool;
 }
 
-impl AnyTrue for Nil {
+impl ContainsTrue for Nil {
     type Output = False;
 }
 
-impl<L> AnyTrue for Cons<True, L> {
+impl<L> ContainsTrue for Cons<True, L> {
     type Output = True;
 }
 
-impl<L> AnyTrue for Cons<False, L>
+impl<L> ContainsTrue for Cons<False, L>
 where
-    L: AnyTrue,
+    L: ContainsTrue,
 {
-    type Output = <L as AnyTrue>::Output;
+    type Output = <L as ContainsTrue>::Output;
 }
 
 
@@ -152,91 +152,91 @@ impl<N: Nat> Nat for S<N> {}
 
 ////////// PeanoEqual //////////
 
-trait PeanoEqual {
+trait NatEqual {
     type Output: Bool;
 }
 
-impl PeanoEqual for (Z, Z) {
+impl NatEqual for (Z, Z) {
     type Output = True;
 }
 
-impl<N> PeanoEqual for (Z, S<N>)
+impl<N> NatEqual for (Z, S<N>)
 where
     N: Nat,
 {
     type Output = False;
 }
 
-impl<N> PeanoEqual for (S<N>, Z)
+impl<N> NatEqual for (S<N>, Z)
 where
     N: Nat,
 {
     type Output = False;
 }
 
-impl<N1, N2> PeanoEqual for (S<N1>, S<N2>)
+impl<N1, N2> NatEqual for (S<N1>, S<N2>)
 where
     N1: Nat,
     N2: Nat,
-    (N1, N2): PeanoEqual,
+    (N1, N2): NatEqual,
 {
-    type Output = <(N1, N2) as PeanoEqual>::Output;
+    type Output = <(N1, N2) as NatEqual>::Output;
 }
 
 
 ////////// PeanoLT //////////
 
-trait PeanoLT {
+trait NatLessThan {
     type Output: Bool;
 }
 
-impl PeanoLT for (Z, Z) {
+impl NatLessThan for (Z, Z) {
     type Output = False;
 }
 
-impl<N: Nat> PeanoLT for (S<N>, Z) {
+impl<N: Nat> NatLessThan for (S<N>, Z) {
     type Output = False;
 }
 
-impl<N: Nat> PeanoLT for (Z, S<N>) {
+impl<N: Nat> NatLessThan for (Z, S<N>) {
     type Output = True;
 }
 
-impl<N1, N2> PeanoLT for (S<N1>, S<N2>)
+impl<N1, N2> NatLessThan for (S<N1>, S<N2>)
 where
     N1: Nat,
     N2: Nat,
-    (N1, N2): PeanoLT,
+    (N1, N2): NatLessThan,
 {
-    type Output = <(N1, N2) as PeanoLT>::Output;
+    type Output = <(N1, N2) as NatLessThan>::Output;
 }
 
 
 ////////// PeanoAbsDiff //////////
 
-trait PeanoAbsDiff {
+trait NatAbsDiff {
     type Output: Nat;
 }
 
-impl PeanoAbsDiff for (Z, Z) {
+impl NatAbsDiff for (Z, Z) {
     type Output = Z;
 }
 
-impl<N: Nat> PeanoAbsDiff for (Z, S<N>) {
+impl<N: Nat> NatAbsDiff for (Z, S<N>) {
     type Output = S<N>;
 }
 
-impl<N: Nat> PeanoAbsDiff for (S<N>, Z) {
+impl<N: Nat> NatAbsDiff for (S<N>, Z) {
     type Output = S<N>;
 }
 
-impl<N1, N2> PeanoAbsDiff for (S<N1>, S<N2>)
+impl<N1, N2> NatAbsDiff for (S<N1>, S<N2>)
 where
     N1: Nat,
     N2: Nat,
-    (N1, N2): PeanoAbsDiff,
+    (N1, N2): NatAbsDiff,
 {
-    type Output = <(N1, N2) as PeanoAbsDiff>::Output;
+    type Output = <(N1, N2) as NatAbsDiff>::Output;
 }
 
 
@@ -292,11 +292,11 @@ where
 
 ////////// MapCat //////////
 
-trait MapCat {
+trait MapConcat {
     type Output;
 }
 
-impl<F, L> MapCat for (F, L)
+impl<F, L> MapConcat for (F, L)
 where
     (F, L): Map,
     <(F, L) as Map>::Output: ListConcatAll,
@@ -307,15 +307,15 @@ where
 
 ////////// AppendIf //////////
 
-trait AppendIf {
+trait PrependIf {
     type Output;
 }
 
-impl<X, Ys> AppendIf for (True, X, Ys) {
+impl<X, Ys> PrependIf for (True, X, Ys) {
     type Output = Cons<X, Ys>;
 }
 
-impl<X, Ys> AppendIf for (False, X, Ys) {
+impl<X, Ys> PrependIf for (False, X, Ys) {
     type Output = Ys;
 }
 
@@ -334,9 +334,9 @@ impl<F, X, Xs, FilterOutput> Filter for (F, Cons<X, Xs>)
 where
     F: Apply<X>,
     (F, Xs): Filter<Output = FilterOutput>,
-    (<F as Apply<X>>::Output, X, FilterOutput): AppendIf,
+    (<F as Apply<X>>::Output, X, FilterOutput): PrependIf,
 {
-    type Output = <(<F as Apply<X>>::Output, X, <(F, Xs) as Filter>::Output) as AppendIf>::Output;
+    type Output = <(<F as Apply<X>>::Output, X, <(F, Xs) as Filter>::Output) as PrependIf>::Output;
 }
 
 
@@ -373,24 +373,24 @@ trait Threatens {
 
 impl<Ax, Ay, Bx, By> Threatens for (Queen<Ax, Ay>, Queen<Bx, By>)
 where
-    (Ax, Bx): PeanoEqual,
-    (Ay, By): PeanoEqual,
-    (Ax, Bx): PeanoAbsDiff,
-    (Ay, By): PeanoAbsDiff,
-    (<(Ax, Bx) as PeanoEqual>::Output,   <(Ay, By) as PeanoEqual  >::Output): Or,
-    (<(Ax, Bx) as PeanoAbsDiff>::Output, <(Ay, By) as PeanoAbsDiff>::Output): PeanoEqual,
-    (<(<(Ax, Bx) as PeanoEqual>::Output, <(Ay, By) as PeanoEqual  >::Output) as Or>::Output, <(<(Ax, Bx) as PeanoAbsDiff>::Output, <(Ay, By) as PeanoAbsDiff>::Output) as PeanoEqual>::Output): Or,
+    (Ax, Bx): NatEqual,
+    (Ay, By): NatEqual,
+    (Ax, Bx): NatAbsDiff,
+    (Ay, By): NatAbsDiff,
+    (<(Ax, Bx) as NatEqual>::Output, <(Ay, By) as NatEqual>::Output): Or,
+    (<(Ax, Bx) as NatAbsDiff>::Output, <(Ay, By) as NatAbsDiff>::Output): NatEqual,
+    (<(<(Ax, Bx) as NatEqual>::Output, <(Ay, By) as NatEqual>::Output) as Or>::Output, <(<(Ax, Bx) as NatAbsDiff>::Output, <(Ay, By) as NatAbsDiff>::Output) as NatEqual>::Output): Or,
 {
     type Output = <
         (
-            <(
-                <(Ax, Bx) as PeanoEqual>::Output,
-                <(Ay, By) as PeanoEqual>::Output,
+          <(
+            <(Ax, Bx) as NatEqual>::Output,
+            <(Ay, By) as NatEqual>::Output,
             ) as Or>::Output,
-            <(
-                <(Ax, Bx) as PeanoAbsDiff>::Output,
-                <(Ay, By) as PeanoAbsDiff>::Output,
-            ) as PeanoEqual>::Output,
+          <(
+            <(Ax, Bx) as NatAbsDiff>::Output,
+            <(Ay, By) as NatAbsDiff>::Output,
+            ) as NatEqual>::Output,
         ) as Or>::Output;
 }
 
@@ -412,10 +412,10 @@ trait Safe {
 impl<C, Q> Safe for (C, Q)
 where
     (  Threatens1<Q>, C): Map,
-    <( Threatens1<Q>, C) as Map>::Output: AnyTrue,
-    <<(Threatens1<Q>, C) as Map>::Output as AnyTrue>::Output: Not,
+    <( Threatens1<Q>, C) as Map>::Output: ContainsTrue,
+    <<(Threatens1<Q>, C) as Map>::Output as ContainsTrue>::Output: Not,
 {
-    type Output = <<<(Threatens1<Q>, C) as Map>::Output as AnyTrue>::Output as Not>::Output;
+    type Output = <<<(Threatens1<Q>, C) as Map>::Output as ContainsTrue>::Output as Not>::Output;
 }
 
 struct Safe1<C>(PhantomData<C>);
@@ -457,9 +457,9 @@ trait AddQueenToAll {
 
 impl<N, X, Cs> AddQueenToAll for (N, X, Cs)
 where
-    (AddQueen2<N, X>, Cs): MapCat,
+    (AddQueen2<N, X>, Cs): MapConcat,
 {
-    type Output = <(AddQueen2<N, X>, Cs) as MapCat>::Output;
+    type Output = <(AddQueen2<N, X>, Cs) as MapConcat>::Output;
 }
 
 
@@ -489,10 +489,10 @@ trait AddQueens {
 
 impl<N, X, Cs, PeanoLTOutput> AddQueens for (N, X, Cs)
 where
-    (X, N): PeanoLT<Output = PeanoLTOutput>,
+    (X, N): NatLessThan<Output = PeanoLTOutput>,
     (PeanoLTOutput, N, X, Cs): AddQueensIf,
 {
-    type Output = <(<(X, N) as PeanoLT>::Output, N, X, Cs) as AddQueensIf>::Output;
+    type Output = <(<(X, N) as NatLessThan>::Output, N, X, Cs) as AddQueensIf>::Output;
 }
 
 
@@ -505,11 +505,11 @@ trait Solution {
 impl<N, AddQueensIfOutput> Solution for N
 where
     N: Nat,
-    (Z, N): PeanoLT,
-    (<(Z, N) as PeanoLT>::Output, N, Z, Cons<Nil, Nil>): AddQueensIf<Output = AddQueensIfOutput>,
-    AddQueensIfOutput: First,
+    (Z, N): NatLessThan,
+    (<(Z, N) as NatLessThan>::Output, N, Z, Cons<Nil, Nil>): AddQueensIf<Output = AddQueensIfOutput>,
+    AddQueensIfOutput: Head,
 {
-    type Output = <<(N, Z, Cons<Nil, Nil>) as AddQueens>::Output as First>::Output;
+    type Output = <<(N, Z, Cons<Nil, Nil>) as AddQueens>::Output as Head>::Output;
 }
 
 
