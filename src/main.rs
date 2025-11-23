@@ -2,7 +2,7 @@
 // https://github.com/insou22/typing-the-technical-interview-rust/blob/main/src/main.rs
 // https://aphyr.com/posts/342-typing-the-technical-interview
 use std::marker::PhantomData;
-
+use std::ops::BitOr;
 ////////// List //////////
 
 struct HNil;
@@ -466,7 +466,7 @@ struct HCons<X, Xs>(PhantomData<(X, Xs)>);
 ////////// UIDEquals //////////
 
 use typenum::private::IsEqualPrivate;
-use typenum::{Bit, Cmp, IsEqual, U, Unsigned, B1, B0};
+use typenum::{B0, B1, Bit, Cmp, IsEqual, Or, U, Unsigned};
 
 pub trait ParamValue {
     type UID: Unsigned;
@@ -482,6 +482,25 @@ where
     Left::UID: IsEqualPrivate<Right::UID, <Left::UID as Cmp<Right::UID>>::Output>,
 {
     type Output = <Left::UID as IsEqual<Right::UID>>::Output;
+}
+
+////////// Contains //////////
+
+trait Contains<Needle: ParamValue> {
+    type Output: Bit;
+}
+
+impl<Needle: ParamValue> Contains<Needle> for HNil {
+    type Output = B0;
+}
+                   // <BRICK_USES as BitOr<USES>>::Output
+impl<Needle: ParamValue, ThisHead: ParamValue, Tail: Contains<Needle>> Contains<Needle>
+    for HCons<ThisHead, Tail>
+where
+    Needle::UID: Cmp<ThisHead::UID>,
+    Needle::UID: IsEqualPrivate<ThisHead::UID, <Needle::UID as Cmp<ThisHead::UID>>::Output>,
+{
+    type Output = <<(Needle, ThisHead) as UIDEquals>::Output as BitOr<B0>>::Output;
 }
 
 ////////// Higher order functions //////////
