@@ -19,8 +19,8 @@ impl Head for Nil {
     type Output = Nil;
 }
 
-impl<X, Xs> Head for Cons<X, Xs> {
-    type Output = X;
+impl<TheHead, Tail> Head for Cons<TheHead, Tail> {
+    type Output = TheHead;
 }
 
 
@@ -30,15 +30,15 @@ trait ListConcat {
     type Output;
 }
 
-impl<L2> ListConcat for (Nil, L2) {
-    type Output = L2;
+impl<RightList> ListConcat for (Nil, RightList) {
+    type Output = RightList;
 }
 
-impl<X, Xs, L2> ListConcat for (Cons<X, Xs>, L2)
+impl<LeftHead, LeftTail, RightList> ListConcat for (Cons<LeftHead, LeftTail>, RightList)
 where
-    (Xs, L2): ListConcat,
+    (LeftTail, RightList): ListConcat,
 {
-    type Output = Cons<X, <(Xs, L2) as ListConcat>::Output>;
+    type Output = Cons<LeftHead, <(LeftTail, RightList) as ListConcat>::Output>;
 }
 
 
@@ -52,12 +52,12 @@ impl ListConcatAll for Nil {
     type Output = Nil;
 }
 
-impl<L, Ls> ListConcatAll for Cons<L, Ls>
+impl<HeadList, TailLists> ListConcatAll for Cons<HeadList, TailLists>
 where
-    Ls: ListConcatAll,
-    (L, <Ls as ListConcatAll>::Output): ListConcat,
+    TailLists: ListConcatAll,
+    (HeadList, <TailLists as ListConcatAll>::Output): ListConcat,
 {
-    type Output = <(L, <Ls as ListConcatAll>::Output) as ListConcat>::Output;
+    type Output = <(HeadList, <TailLists as ListConcatAll>::Output) as ListConcat>::Output;
 }
 
 
@@ -82,15 +82,15 @@ impl ContainsTrue for Nil {
     type Output = False;
 }
 
-impl<L> ContainsTrue for Cons<True, L> {
+impl<Tail> ContainsTrue for Cons<True, Tail> {
     type Output = True;
 }
 
-impl<L> ContainsTrue for Cons<False, L>
+impl<Tail> ContainsTrue for Cons<False, Tail>
 where
-    L: ContainsTrue,
+    Tail: ContainsTrue,
 {
-    type Output = <L as ContainsTrue>::Output;
+    type Output = <Tail as ContainsTrue>::Output;
 }
 
 
@@ -277,16 +277,16 @@ trait Map {
     type Output;
 }
 
-impl<F> Map for (F, Nil) {
+impl<Function> Map for (Function, Nil) {
     type Output = Nil;
 }
 
-impl<F, X, Xs> Map for (F, Cons<X, Xs>)
+impl<Function, TheHead, Tail> Map for (Function, Cons<TheHead, Tail>)
 where
-    F:  Apply<X>,
-    (F, Xs): Map,
+    Function:  Apply<TheHead>,
+    (Function, Tail): Map,
 {
-    type Output = Cons<<F as Apply<X>>::Output, <(F, Xs) as Map>::Output>;
+    type Output = Cons<<Function as Apply<TheHead>>::Output, <(Function, Tail) as Map>::Output>;
 }
 
 
@@ -296,12 +296,12 @@ trait MapConcat {
     type Output;
 }
 
-impl<F, L> MapConcat for (F, L)
+impl<FunctionThatReturnsList, List> MapConcat for (FunctionThatReturnsList, List)
 where
-    (F, L): Map,
-    <(F, L) as Map>::Output: ListConcatAll,
+    (FunctionThatReturnsList, List): Map,
+    <(FunctionThatReturnsList, List) as Map>::Output: ListConcatAll,
 {
-    type Output = <<(F, L) as Map>::Output as ListConcatAll>::Output;
+    type Output = <<(FunctionThatReturnsList, List) as Map>::Output as ListConcatAll>::Output;
 }
 
 
@@ -311,12 +311,12 @@ trait PrependIf {
     type Output;
 }
 
-impl<X, Ys> PrependIf for (True, X, Ys) {
-    type Output = Cons<X, Ys>;
+impl<TheHead, Tail> PrependIf for (True, TheHead, Tail) {
+    type Output = Cons<TheHead, Tail>;
 }
 
-impl<X, Ys> PrependIf for (False, X, Ys) {
-    type Output = Ys;
+impl<TheHead, Tail> PrependIf for (False, TheHead, Tail) {
+    type Output = Tail;
 }
 
 
@@ -326,17 +326,17 @@ trait Filter {
     type Output;
 }
 
-impl<F> Filter for (F, Nil) {
+impl<FilterFunction> Filter for (FilterFunction, Nil) {
     type Output = Nil;
 }
 
-impl<F, X, Xs, FilterOutput> Filter for (F, Cons<X, Xs>)
+impl<FilterFunction, TheHead, Tail, FilterOutput> Filter for (FilterFunction, Cons<TheHead, Tail>)
 where
-    F: Apply<X>,
-    (F, Xs): Filter<Output = FilterOutput>,
-    (<F as Apply<X>>::Output, X, FilterOutput): PrependIf,
+    FilterFunction: Apply<TheHead>,
+    (FilterFunction, Tail): Filter<Output = FilterOutput>,
+    (<FilterFunction as Apply<TheHead>>::Output, TheHead, FilterOutput): PrependIf,
 {
-    type Output = <(<F as Apply<X>>::Output, X, <(F, Xs) as Filter>::Output) as PrependIf>::Output;
+    type Output = <(<FilterFunction as Apply<TheHead>>::Output, TheHead, <(FilterFunction, Tail) as Filter>::Output) as PrependIf>::Output;
 }
 
 
