@@ -1,4 +1,3 @@
-#![recursion_limit = "1024"] // necessary to generate solutions past N = 6
 // https://github.com/insou22/typing-the-technical-interview-rust/blob/main/src/main.rs
 // https://aphyr.com/posts/342-typing-the-technical-interview
 use std::marker::PhantomData;
@@ -66,27 +65,28 @@ impl<TheHead, Tail> PrependIf for (B0, TheHead, Tail) {
 
 ////////// Intersection //////////
 
-trait Intersection {
+trait Intersection<Rhs> {
     type Output;
 }
 
-impl Intersection for HNil {
+impl<Rhs> Intersection<Rhs> for HNil {
     type Output = HNil;
 }
 
-impl<TheHead, Tail, TailFilterOutput> Intersection for HCons<TheHead, Tail>
+impl<TheHead: ParamValue, Tail, Rhs, TailFilterOutput> Intersection<Rhs> for HCons<TheHead, Tail>
 where
-  Tail: Intersection<Output =TailFilterOutput>,
+    Tail: Intersection<Rhs, Output = TailFilterOutput>,
+    Rhs: Contains<TheHead>,
     (
-      // <FilterFunction as Apply<TheHead>>::Output,
-      TheHead,
-      TailFilterOutput,
+        <Rhs as Contains<TheHead>>::Output,
+        TheHead,
+        TailFilterOutput,
     ): PrependIf,
 {
     type Output = <(
-        // <FilterFunction as Apply<TheHead>>::Output,
+        <Rhs as Contains<TheHead>>::Output,
         TheHead,
-        <(FilterFunction, Tail) as Intersection>::Output,
+        <Tail as Intersection<Rhs>>::Output,
     ) as PrependIf>::Output;
 }
 
@@ -123,6 +123,7 @@ fn main() {
     type List2 = HCons<Param2, HCons<Param3, HNil>>;
     println!(
         "{}",
-        std::any::type_name::<<List1 as Intersection<List2>>::Output>().replace("nine_queens::", "")
+        std::any::type_name::<<List1 as Intersection<List2>>::Output>()
+            .replace("nine_queens::", "")
     );
 }
