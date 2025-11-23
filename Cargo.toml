@@ -1,8 +1,9 @@
 [package]
-name = "nine_queens"
+name = "hlist-intersection-assuming-manual-id-assignment"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.91.0"
 
 [dependencies]
+frunk = "0.4.4"
 typenum = { version = "1.19.0", features = [ "const-generics"] }
