@@ -93,7 +93,6 @@ where
     type Output = <Tail as ContainsTrue>::Output;
 }
 
-
 ////////// Not //////////
 
 trait Not {
@@ -183,6 +182,21 @@ where
     type Output = <(N1, N2) as NatEqual>::Output;
 }
 
+////////// Contains, might require Conj1 trick//////////
+
+
+pub trait ParamValue: Clone {
+  const NAME: &'static str;
+}
+
+trait Equals {
+    type Output: Bool;
+}
+
+impl<Left, Right> Equals for (Left, Right)
+where {
+  type Output = ();
+}
 
 ////////// PeanoLT //////////
 
@@ -516,5 +530,12 @@ where
 ////////// Reify //////////
 
 fn main() {
+    enum Elem0{};
+    enum Elem1{};
+    enum Elem2{};
+    enum Elem3{};
+    enum Elem4{};
+    type List1 =Cons<Elem0, Cons<Elem1, Cons<Elem2, Nil>>>;
+    type List2 =Cons<Elem2, Cons<Elem3, Cons<Elem4, Nil>>>;
     println!("{}", std::any::type_name::< <N6 as Solution>::Output >().replace("nine_queens::", ""));
 }
