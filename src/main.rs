@@ -515,7 +515,7 @@ where
     type Output = <<(N, Z, Cons<Nil, Nil>) as AddQueens>::Output as Head>::Output;
 }
 
-////////// Name Equals //////////
+////////// UIDEquals //////////
 
 use typenum::private::IsEqualPrivate;
 use typenum::{Bit, Cmp, Integer, IsEqual, Unsigned, U};
@@ -524,11 +524,11 @@ pub trait ParamValue {
     type UID: Unsigned;
 }
 
-trait NameEquals {
+trait UIDEquals {
     type Output: Bit;
 }
 
-impl<Left: ParamValue, Right: ParamValue> NameEquals for (Left, Right)
+impl<Left: ParamValue, Right: ParamValue> UIDEquals for (Left, Right)
 where
     Left::UID: Cmp<Right::UID>,
     Left::UID: IsEqualPrivate<Right::UID, <Left::UID as Cmp<Right::UID>>::Output>,
@@ -539,16 +539,34 @@ where
 ////////// Params //////////
 
 #[derive(Clone)]
+struct Param0;
+impl ParamValue for Param0{
+  type UID = U<0>;
+}
+
+#[derive(Clone)]
 struct Param1;
 impl ParamValue for Param1{
   type UID = U<1>;
 }
 
+#[derive(Clone)]
+struct Param2;
+impl ParamValue for Param2{
+  type UID = U<2>;
+}
+
+#[derive(Clone)]
+struct Param3;
+impl ParamValue for Param3{
+  type UID = U<3>;
+}
+
 ////////// Reify //////////
 
 fn main() {
-    type List1 = Cons<Elem0, Cons<Elem1, Cons<Elem2, Nil>>>;
-    type List2 = Cons<Elem2, Cons<Elem3, Cons<Elem4, Nil>>>;
+    type List1 = Cons<Param0, Cons<Param1, Cons<Param2, Nil>>>;
+    type List2 = Cons<Param2, Cons<Param3, Nil>>;
     println!(
         "{}",
         std::any::type_name::<<N6 as Solution>::Output>().replace("nine_queens::", "")
