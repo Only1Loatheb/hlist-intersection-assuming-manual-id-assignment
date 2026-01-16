@@ -7,126 +7,124 @@
 // Type level programming examples:
 // https://github.com/insou22/typing-the-technical-interview-rust/blob/main/src/main.rs
 // https://aphyr.com/posts/342-typing-the-technical-interview
+use frunk::hlist::{HCons, HNil};
 use std::ops::BitOr;
-use frunk::{HCons, HNil};
-use typenum::private::IsEqualPrivate;
-use typenum::{B0, B1, Bit, Cmp, IsEqual, U, Unsigned};
-
-////////// UIDEquals //////////
+use frunk::hlist;
+use typenum::{Bit, IsEqual, Unsigned, B0, B1, U};
 
 pub trait ParamValue {
-    type UID: Unsigned;
-}
-
-trait UIDEquals {
-    type Output: Bit;
-}
-
-impl<Left: ParamValue, Right: ParamValue> UIDEquals for (Left, Right)
-where
-    Left::UID: Cmp<Right::UID>,
-    Left::UID: IsEqualPrivate<Right::UID, <Left::UID as Cmp<Right::UID>>::Output>,
-{
-    type Output = <Left::UID as IsEqual<Right::UID>>::Output;
+  type UID: Unsigned;
 }
 
 ////////// Contains //////////
 
 trait Contains<Needle: ParamValue> {
-    type Output: Bit;
+  type IsContained: Bit;
 }
 
 impl<Needle: ParamValue> Contains<Needle> for HNil {
-    type Output = B0;
+  type IsContained = B0;
 }
 
-impl<Needle: ParamValue, Head: ParamValue, Tail: Contains<Needle>> Contains<Needle>
-    for HCons<Head, Tail>
+impl<Needle: ParamValue, Head: ParamValue, Tail: Contains<Needle>> Contains<Needle> for HCons<Head, Tail>
 where
-    Needle::UID: Cmp<Head::UID>,
-    Needle::UID: IsEqualPrivate<Head::UID, <Needle::UID as Cmp<Head::UID>>::Output>,
-    <Needle::UID as IsEqualPrivate<Head::UID, <Needle::UID as Cmp<Head::UID>>::Output>>::Output: BitOr<<Tail as Contains<Needle>>::Output>,
-    <<Needle::UID as IsEqualPrivate<Head::UID, <Needle::UID as Cmp<Head::UID>>::Output>>::Output as BitOr<<Tail as Contains<Needle>>::Output>>::Output: Bit,
+  Needle::UID: IsEqual<Head::UID>,
+  <Needle::UID as IsEqual<Head::UID>>::Output: BitOr<<Tail as Contains<Needle>>::IsContained>,
+  <<Needle::UID as IsEqual<Head::UID>>::Output as BitOr<<Tail as Contains<Needle>>::IsContained>>::Output: Bit,
 {
-    type Output = <<(Needle, Head) as UIDEquals>::Output as BitOr<<Tail as Contains<Needle>>::Output >>::Output;
+  type IsContained =
+    <<Needle::UID as IsEqual<Head::UID>>::Output as BitOr<<Tail as Contains<Needle>>::IsContained>>::Output;
 }
 
-////////// PrependIf //////////
+////////// Filter //////////
 
-trait PrependIf {
-    type Output;
+trait Filter<Head, Tail> {
+  type Filtered;
+  fn filter(head: Head, tail: Tail) -> Self::Filtered;
 }
 
-impl<Head, Tail> PrependIf for (B1, Head, Tail) {
-    type Output = HCons<Head, Tail>;
+impl<Head, Tail> Filter<Head, Tail> for B1 {
+  type Filtered = HCons<Head, Tail>;
+
+  #[inline(always)]
+  fn filter(head: Head, tail: Tail) -> Self::Filtered {
+    HCons { head, tail }
+  }
 }
 
-impl<Head, Tail> PrependIf for (B0, Head, Tail) {
-    type Output = Tail;
+impl<Head, Tail> Filter<Head, Tail> for B0 {
+  type Filtered = Tail;
+
+  #[inline(always)]
+  fn filter(_head: Head, tail: Tail) -> Self::Filtered {
+    tail
+  }
 }
 
 ////////// Intersection //////////
 
-trait Intersection<Rhs> {
-    type Output;
+trait Intersect<RHS> {
+  type Intersection;
+
+  fn intersect(self, rhs: RHS) -> Self::Intersection;
 }
 
-impl<Rhs> Intersection<Rhs> for HNil {
-    type Output = HNil;
+impl<RHS> Intersect<RHS> for HNil {
+  type Intersection = HNil;
+
+  #[inline(always)]
+  fn intersect(self, rhs: RHS) -> Self::Intersection {
+    HNil
+  }
 }
 
-impl<Head: ParamValue, Tail, Rhs, TailFilterOutput> Intersection<Rhs> for HCons<Head, Tail>
+impl<Head: ParamValue, Tail: Intersect<RHS>, RHS: Contains<Head>> Intersect<RHS> for HCons<Head, Tail>
 where
-    Tail: Intersection<Rhs, Output = TailFilterOutput>,
-    Rhs: Contains<Head>,
-    (
-        <Rhs as Contains<Head>>::Output,
-        Head,
-        TailFilterOutput,
-    ): PrependIf,
+  <RHS as Contains<Head>>::IsContained: Filter<Head, <Tail as Intersect<RHS>>::Intersection>,
 {
-    type Output = <(
-        <Rhs as Contains<Head>>::Output,
-        Head,
-        <Tail as Intersection<Rhs>>::Output,
-    ) as PrependIf>::Output;
+  type Intersection =
+    <<RHS as Contains<Head>>::IsContained as Filter<Head, <Tail as Intersect<RHS>>::Intersection>>::Filtered;
+
+  #[inline(always)]
+  fn intersect(self, rhs: RHS) -> Self::Intersection {
+    let intersected_tail = self.tail.intersect(rhs);
+    <<RHS as Contains<Head>>::IsContained as Filter<Head, <Tail as Intersect<RHS>>::Intersection>>::filter(
+      self.head,
+      intersected_tail,
+    )
+  }
 }
 
 ////////// Params //////////
 
-#[derive(Clone)]
+#[derive(Debug)]
 struct Param0;
 impl ParamValue for Param0 {
-    type UID = U<0>;
+  type UID = U<0>;
 }
 
-#[derive(Clone)]
+#[derive(Debug)]
 struct Param1;
 impl ParamValue for Param1 {
-    type UID = U<1>;
+  type UID = U<1>;
 }
 
-#[derive(Clone)]
+#[derive(Debug)]
 struct Param2;
 impl ParamValue for Param2 {
-    type UID = U<2>;
+  type UID = U<2>;
 }
 
-#[derive(Clone)]
+#[derive(Debug)]
 struct Param3;
 impl ParamValue for Param3 {
-    type UID = U<3>;
+  type UID = U<3>;
 }
 
 ////////// Reify //////////
 
 fn main() {
-    type List1 = HCons<Param0, HCons<Param1, HCons<Param2, HNil>>>;
-    type List2 = HCons<Param2, HCons<Param3, HNil>>;
-    println!(
-        "{}",
-        std::any::type_name::<<List1 as Intersection<List2>>::Output>()
-            .replace("frunk_core::hlist::", "")
-            .replace("hlist_intersection_assuming_manual_id_assignment::", "")
-    );
+  let list1 = hlist![Param0, Param1, Param2];
+  let list2 = hlist![Param2, Param3];
+  println!("{:?}", list1.intersect(list2));
 }
