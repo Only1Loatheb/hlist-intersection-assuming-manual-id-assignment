@@ -8,9 +8,9 @@
 // https://github.com/insou22/typing-the-technical-interview-rust/blob/main/src/main.rs
 // https://aphyr.com/posts/342-typing-the-technical-interview
 use frunk::hlist::{HCons, HNil};
+use frunk::{HList, hlist};
 use std::ops::BitOr;
-use frunk::hlist;
-use typenum::{Bit, IsEqual, Unsigned, B0, B1, U};
+use typenum::{B0, B1, Bit, IsEqual, U, Unsigned};
 
 pub trait ParamValue {
   type UID: Unsigned;
@@ -127,4 +127,13 @@ fn main() {
   let list1 = hlist![Param0, Param1, Param2];
   let list2 = hlist![Param2, Param3];
   println!("{:?}", list1.intersect(list2));
+
+  type List1 = HList![Param0, Param1, Param2];
+  type List2 = HList![Param1, Param2, Param3];
+  println!(
+    "{}",
+    std::any::type_name::<<List1 as Intersect<List2>>::Intersection>()
+      .replace("frunk_core::hlist::", "")
+      .replace("hlist_intersection_assuming_manual_id_assignment::", "")
+  );
 }
